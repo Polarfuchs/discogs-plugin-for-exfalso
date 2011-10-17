@@ -63,24 +63,24 @@ class ResultTreeView(HintedTreeView, MultiDragTreeView):
 
     def __track_datafunc(self, col, cell, model, itr):
         idx = model.get_path(itr)[0]
-        if idx >= len(self.remote_album):
+        if idx >= len(self.remote_album.tracklist):
             cell.set_property('text', '')
         else:
             cell.set_property('text', idx + 1)
 
     def __title_datafunc(self, col, cell, model, itr):
         idx = model.get_path(itr)[0]
-        if idx >= len(self.remote_album):
+        if idx >= len(self.remote_album.tracklist):
             cell.set_property('text', '')
         else:
-            cell.set_property('text', self.remote_album[idx].title)
+            cell.set_property('text', self.remote_album.tracklist[idx]['title'])
 
     def __artist_datafunc(self, col, cell, model, itr):
         idx = model.get_path(itr)[0]
-        if idx >= len(self.remote_album) or not self.remote_album[idx].artist:
+        if idx >= len(self.remote_album.tracklist) or not self.remote_album.tracklist[idx]['artists']:
             cell.set_property('text', '')
         else:
-            cell.set_property('text', self.remote_album[idx].artist.name)
+            cell.set_property('text', self.remote_album.tracklist[idx]['artists'])
 
     def __init__(self, album):
         self.album = album
@@ -121,7 +121,7 @@ class ResultTreeView(HintedTreeView, MultiDragTreeView):
             itr = self.model.get_iter_from_string(str(len(self.model) - 1))
             self.model.remove(itr)
         self.remote_album = remote_album
-        has_artists = bool(filter(lambda t: t.artist, remote_album))
+        has_artists = bool(filter(lambda t: t.artist, remote_album.artists))
         self.get_column(3).set_visible(has_artists)
         self.columns_autosize()
         self.queue_draw()
