@@ -113,9 +113,9 @@ class ResultTreeView(HintedTreeView, MultiDragTreeView):
     def update_remote_album(self, remote_album):
         """Updates the TreeView, handling results with a different number of
         tracks than the album being tagged."""
-        for i in range(len(self.model), len(remote_album)):
+        for i in range(len(self.model), len(remote_album.tracklist)):
             self.model.append((None, ))
-        for i in range(len(self.model), len(remote_album), -1):
+        for i in range(len(self.model), len(remote_album.tracklist), -1):
             if self.model[-1][0] is not None:
                 break
             itr = self.model.get_iter_from_string(str(len(self.model) - 1))
@@ -359,45 +359,54 @@ class SearchWindow(gtk.Dialog):
 #        self._qthread.add(self.__process_results,
 #                         self._query.getReleases, filt)
 
-    def __process_results(self, results):
-        """Callback for search query completion."""
+    #def __process_results(self, results):
+        #"""Callback for search query completion."""
         
-        self.search_button.set_sensitive(True)
-        if results is None:
-            self.result_label.set_text("Error encountered. Please retry.")
-            self.search_button.set_sensitive(True)
-            return
-        for release in map(lambda r: r.release, results):
-            self._resultlist.append((release, ))
-        if len(results) > 0 and self.result_combo.get_active() == -1:
-            self.result_label.set_markup("<i>Loading result...</i>")
-            self.result_combo.set_active(0)
-        else:
-            self.result_label.set_markup("No results found.")
+        #self.search_button.set_sensitive(True)
+        #if results is None:
+            #self.result_label.set_text("Error encountered. Please retry.")
+            #self.search_button.set_sensitive(True)
+            #return
+        #for release in map(lambda r: r.release, results):
+            #self._resultlist.append((release, ))
+        #if len(results) > 0 and self.result_combo.get_active() == -1:
+            #self.result_label.set_markup("<i>Loading result...</i>")
+            #self.result_combo.set_active(0)
+        #else:
+            #self.result_label.set_markup("No results found.")
 
+    #def __result_changed(self, combo):
+        #"""Called when a release is chosen from the result combo."""
+        #idx = combo.get_active()
+        #if idx == -1: return
+        #rel_id = self._resultlist[idx][0].id
+        #if rel_id in self._releasecache:
+            #self.__update_results(self._releasecache[rel_id])
+        #else:
+            #self.result_label.set_markup("<i>Loading result...</i>")
+            #inc = ws.ReleaseIncludes(
+                    #artist=True, releaseEvents=True, tracks=True)
+            #self._qthread.add(self.__update_result,
+                    #self._query.getReleaseById, rel_id, inc)
+
+    #def __update_result(self, release):
+        #"""Callback for release detail download from result combo."""
+        #num_results = len(self._resultlist)
+        #text = ngettext("Found %d result.", "Found %d results.", num_results)
+        #self.result_label.set_text(text % num_results)
+        #self._releasecache.setdefault(extractUuid(release.id), release)
+        #self.result_treeview.update_remote_album(release.tracks)
+        #self.current_release = release
+        #self.release_combo.update(release)
+        #self.get_action_area().get_children()[1].set_sensitive(True)
+        
     def __result_changed(self, combo):
         """Called when a release is chosen from the result combo."""
         idx = combo.get_active()
         if idx == -1: return
-        rel_id = self._resultlist[idx][0].id
-        if rel_id in self._releasecache:
-            self.__update_results(self._releasecache[rel_id])
-        else:
-            self.result_label.set_markup("<i>Loading result...</i>")
-            inc = ws.ReleaseIncludes(
-                    artist=True, releaseEvents=True, tracks=True)
-            self._qthread.add(self.__update_result,
-                    self._query.getReleaseById, rel_id, inc)
-
-    def __update_result(self, release):
-        """Callback for release detail download from result combo."""
-        num_results = len(self._resultlist)
-        text = ngettext("Found %d result.", "Found %d results.", num_results)
-        self.result_label.set_text(text % num_results)
-        self._releasecache.setdefault(extractUuid(release.id), release)
-        self.result_treeview.update_remote_album(release.tracks)
+        release = self._resultlist[idx][0]
+        self.result_treeview.update_remote_album(release)
         self.current_release = release
-        self.release_combo.update(release)
         self.get_action_area().get_children()[1].set_sensitive(True)
 
     def __init__(self, album, cache):
@@ -424,12 +433,11 @@ class SearchWindow(gtk.Dialog):
         sq = self.search_query = gtk.Entry()
         sq.connect('activate', self.__do_query)
 
-        alb = '"%s"' % album[0].comma("album").replace('"', '')
+        alb = '%s' % album[0].comma("album").replace('"', '')
         art = get_artist(album)
         if art:
-            alb = '%s AND artist:"%s"' % (alb, art.replace('"', ''))
-        sq.set_text('%s AND tracks:%d' %
-                (alb, get_trackcount(album)) )
+            alb = '%s AND %s' % (alb, art.replace('"', ''))
+        sq.set_text(alb)
 
         lbl = gtk.Label("_Query:")
         lbl.set_use_underline(True)
